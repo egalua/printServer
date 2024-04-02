@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "fast-xml-parser": "^4.3.6",
+    "pdfmake": "^0.2.10",
+    "webdav": "^5.5.0"
+  },
+  "type": "module"
+}
