@@ -107,17 +107,16 @@ class Act{
 
     const yandexFileName = this.yandexOptions.basePath + filename;
     
-    // Временно отключено для тестов !!!
-    // try{
-    //   const url = await this.saveFileToYandex(yandexFileName, actFileName);
-    //   // можно удалить actFileName
-    //   fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
-    //   return {actPrintUrl:url}
-    // }catch(e){
-    //   // можно удалить actFileName
-    //   fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
-    //   return {error:e.message}
-    // }  
+    try{
+      const url = await this.saveFileToYandex(yandexFileName, actFileName);
+      // можно удалить actFileName
+      fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
+      return {actPrintUrl:url}
+    }catch(e){
+      // можно удалить actFileName
+      fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
+      return {error:e.message}
+    }  
     
 
   }
@@ -428,17 +427,17 @@ class Act{
 
 
 
-// **************************************************************************************************
-// тест класса Act
-// **************************************************************************************************
+// // **************************************************************************************************
+// // тест класса Act
+// // **************************************************************************************************
 
-async function testAtc(){
-  const actId = 549;
-  const act = new Act(actId);
-  const resp = await act.print();
-  console.log(resp)
-}
+// async function testAtc(){
+//   const actId = 549;
+//   const act = new Act(actId);
+//   const resp = await act.print();
+//   console.log(resp)
+// }
 
-testAtc()
+// testAtc()
 
 export {Act};
