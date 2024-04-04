@@ -107,16 +107,17 @@ class Act{
 
     const yandexFileName = this.yandexOptions.basePath + filename;
     
-    try{
-      const url = await this.saveFileToYandex(yandexFileName, actFileName);
-      // можно удалить actFileName
-      fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
-      return {actPrintUrl:url}
-    }catch(e){
-      // можно удалить actFileName
-      fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
-      return {error:e.message}
-    }  
+    // Временно отключено для тестов !!!
+    // try{
+    //   const url = await this.saveFileToYandex(yandexFileName, actFileName);
+    //   // можно удалить actFileName
+    //   fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
+    //   return {actPrintUrl:url}
+    // }catch(e){
+    //   // можно удалить actFileName
+    //   fs.unlink(actFileName, err=>{if(err) console.warn('Не удалось удалить файл '+ actFileName)})
+    //   return {error:e.message}
+    // }  
     
 
   }
@@ -234,6 +235,35 @@ class Act{
     const altFontSize = 6;
     const headerTableBackground='#1155CC';
     const epsHeaderBackground = '#6D9EEB';
+    const eksHeaderBackground = '#EFEFEF';
+    const getPrice = (cost, volume)=>{
+      const rCost = this.lib.roundToX(cost,2);
+      const rVolume = this.lib.roundToX(volume,2);
+    }
+    const getCost = (price, volume)=>{
+      const intPrice = this.lib.roundToX(price*100,0);
+      const intVolume = this.lib.roundToX(volume*10000,0);
+      return this.lib.roundToX((intPrice*intVolume)/1000000,2)
+    }
+    const getFullCost = (costs)=>{
+      const intCosts = costs.map(c=>this.lib.roundToX(c*100,0));
+      const totalIntCost = intCosts.reduce((acc,c)=>{
+        acc += c;
+        return acc
+      },0)
+      return this.lib.roundToX(totalIntCost/100,2);
+    }
+    const fullCost = getFullCost(act.eps.map(ep=>parseFloat(ep.cost?ep.cost:0)));
+    const fullWorksCost = getFullCost(act.eps.reduce((acc,ep)=>{
+      const workCosts = ep.eks.map(ek=>ek.works_cost?ek.works_cost:0);
+      return acc.concat(workCosts);
+    },[]));
+    const fullMaterialsCost = getFullCost(act.eps.reduce((acc,ep)=>{
+      const materialsCost = ep.eks.map(ek=>ek.materials_cost?ek.materials_cost:0);
+      return acc.concat(materialsCost);
+    },[]));
+
+    // ----- Заголовок таблицы -----
     const actBody = [
       [ // заголовок таблицы
         {text:'№ п.п.', bold:true, style:{color:'white', alignment:'center'}, fontSize:baseFonSize, fillColor:headerTableBackground},    
@@ -255,7 +285,7 @@ class Act{
         {text:'', fillColor:headerTableBackground},
         {text:'', fillColor:headerTableBackground},
         // итого: сумма всех материалов и работ
-        {text:'{{общая сумма}}', bold:true, style:{color:'white', alignment:'center'}, fontSize:baseFonSize, fillColor:headerTableBackground},
+        {text: fullCost, bold:true, style:{color:'white', alignment:'center'}, fontSize:baseFonSize, fillColor:headerTableBackground},
         {text:'', fillColor:headerTableBackground},{text:'', fillColor:headerTableBackground},{text:'', fillColor:headerTableBackground}
       ],
       [
@@ -263,7 +293,7 @@ class Act{
         {text:'Работа и механизмы', bold:false, style:{color:'black', alignment:'left'}, fontSize:baseFonSize},
         '','','','',
         // итого: сумма работ
-        {text:'{{сумма работ}}', bold:false, style:{color:'black', alignment:'left'}, fontSize:baseFonSize},
+        {text: fullWorksCost, bold:false, style:{color:'black', alignment:'right'}, fontSize:baseFonSize},
         '','',''
       ],
       [
@@ -271,7 +301,7 @@ class Act{
         {text:'Материалы', bold:false, style:{color:'black', alignment:'left'}, fontSize:baseFonSize},
         '','','','',
         // итого: сумма материалов
-        {text:'{{сумма материалов}}', bold:false, style:{color:'black', alignment:'left'}, fontSize:baseFonSize},
+        {text: fullMaterialsCost, bold:false, style:{color:'black', alignment:'right'}, fontSize:baseFonSize},
         '','',''
       ]
     ]
@@ -282,8 +312,8 @@ class Act{
     // ... цикл по act.eps[i].eks[j].mats для act.eps[i].eks[j].mats[k].basic!=0
     // ... цикл по act.eps[i].eks[j].mats для act.eps[i].eks[j].mats[k].basic==0
 
-    // формируем "тело" таблицы: перебираем еп; ек внутри еп; материалы внутри ек
-    act.eps.forEach(ep => {
+    // ----- Тело таблицы -----
+    act.eps.forEach(ep => { // ***** блок ep *****
       // const factVolume = act.eps[i].eks.reduce((all,e)=>{ all+=parseFloat(e.fact_volume?e.fact_volume:0); return all},0);
       const factVolume = ep.eks.reduce((acc,ek)=>{
         const factVolume = ek.fact_volume? this.lib.roundToX(parseFloat(ek.fact_volume), 4) :0;
@@ -298,16 +328,98 @@ class Act{
         {text:ep.name,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true},// Наименование работ
         {text:'',fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // расход
         {text:'',fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // ед.изм.
-        {text:factVolume,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // Объем
-        {text:price,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // Стоимость за единицу
-        {text:cost,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // Итого, руб. - замена на прямой подсчет price*volume
+        {text:factVolume,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true,style:{alignment:'center'}}, // Объем
+        {text:price,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true,style:{alignment:'right'}}, // Стоимость за единицу
+        {text:cost,fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true,style:{alignment:'right'}}, // Итого, руб. - замена на прямой подсчет price*volume
         {text:'',fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // Комментарий
         {text:'',fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true}, // Дата Начало
         {text:'',fontSize:baseFonSize,fillColor:epsHeaderBackground,bold:true} // Дата Завершение
       ])
-      // ep.eks.forEach(ek=>{
-      //   actBody.push([])  
-      // })
+      ep.eks.forEach(ek=>{ // ****** блок ek *****
+        const hStyle= {fontSize:baseFonSize,fillColor:eksHeaderBackground,bold:true};
+        const tStyle = {fontSize:baseFonSize,bold:false};
+        // строки для eks
+        actBody.push(
+          [
+          {text:ek.order_num,style:{alignment:'center'},...hStyle}, // № п/п act.eps[i].eks[j].order_num
+          {text:ek.work_types_name,style:{alignment:'left'},...hStyle},// act.eps[i].eks[j].work_types_name,        // Наименование работ
+          {text:'',...hStyle}, // Расход        
+          {text: ek.work_types_ed_izm,style:{alignment:'center'},...hStyle}, // Ед. изм.
+          {text:parseFloat(ek.fact_volume?ek.fact_volume:0),style:{alignment:'center'},...hStyle}, // Объем фактический 
+          {text:this.lib.roundToX(ek.price?ek.price:0,2),style:{alignment:'right'},...hStyle},// Стоимость за единицу
+          {text:this.lib.roundToX(ek.cost?ek.cost:0,2),style:{alignment:'right'},...hStyle},// Итого, руб. Формула
+          {text:ek.note,...hStyle},// Комментарий act.eps[i].eks[j].note
+          {text: 
+            `п: ${ek.planned_start_date?this.lib.convertToDate(ek.planned_start_date):''}
+             нр:${ek.workset_start_date?this.lib.convertToDate(ek.workset_start_date):''}
+             ф: ${ek.fact_start_date?this.lib.convertToDate(ek.fact_start_date):''}`
+             ,style:{alignment:'left'},...hStyle,fontSize:altFontSize
+          },// Начало
+          {text: 
+            `п: ${ek.planned_close_date?this.lib.convertToDate(ek.planned_close_date):''}
+            нр: ${ek.workset_end_date?this.lib.convertToDate(ek.workset_end_date):''}
+            ф: ${ek.fact_end_date?this.lib.convertToDate(ek.fact_end_date):''}`
+            ,style:{alignment:'left'},...hStyle,fontSize:altFontSize
+          },// Завершение
+        ],
+        [
+          {text:'',...tStyle}, // № п.п.
+          {text:'Работа и механизмы',style:{alignment:'left'},...tStyle}, // Наименование работ
+          {text:'',...tStyle}, // Расход
+          {text:'',...tStyle}, // Ед. изм.
+          {text:'',...tStyle}, // Объем 
+          {text:this.lib.roundToX(ek.works_price?ek.works_price:0,2),style:{alignment:'right'},...tStyle}, // Стоимость за единицу 
+          {text:this.lib.roundToX(ek.works_cost?ek.works_cost:0,2),style:{alignment:'right'},...tStyle}, // Итого, руб.
+          {text:'',...tStyle}, // Комментарий
+          {text:'',...tStyle},  // Дата Начало
+          {text:'',...tStyle},  // Дата Завершениеs
+        ],
+        [
+          {text:'',...tStyle}, // № п.п.
+          {text:'Материалы',style:{alignment:'left'},...tStyle}, // Наименование работ
+          {text:'',...tStyle}, // Расход
+          {text:'',...tStyle}, // Ед. изм.
+          {text:'',...tStyle}, // Объем 
+          {text:'',...tStyle}, // Стоимость за единицу
+          {text: this.lib.roundToX(ek.materials_cost?ek.materials_cost:0,2),style:{alignment:'right'},...tStyle}, // Итого, руб. 
+          {text:'',...tStyle}, // комментарий
+          {text:'',...tStyle}, // Дата Начало
+          {text:'',...tStyle} // Дата Завершение
+        ]
+        );  
+        ek.mats.forEach(m=>{ // ***** блок mats (основные материалы) *****
+          if(m.basic!=0){ // основные материалы base_mats
+            actBody.push([
+              {text:'',...tStyle}, // № п.п.
+              {text:m.name,style:{alignment:'right'},...tStyle}, // Наименование работ
+              {text:m.consumption_rate,...tStyle}, // Расход
+              {text:m.ed_izm,style:{alignment:'center'},...tStyle}, // Ед. изм.
+              {text:m.volume?m.volume:0,style:{alignment:'center'},...tStyle}, // Объем фактический
+              {text:m.price?m.price:'',style:{alignment:'right'},...tStyle}, // Стоимость за единицу
+              {text:this.lib.roundToX(m.cost?m.cost:0,2) ,...tStyle}, // Итого, руб. 
+              {text:'',...tStyle}, // комментарий
+              {text:'',...tStyle}, // Дата Начало
+              {text:'',...tStyle} // Дата Завершение
+            ])
+          }
+        });
+        ek.mats.forEach(m=>{ // ***** блок mats (Дополнительные материалы) *****
+          if(m.basic==0){
+            actBody.push([
+              {text:'',...tStyle}, // № п.п.
+              {text:m.name,style:{alignment:'right'},...tStyle}, // Наименование работ
+              {text:'',...tStyle}, // Расход
+              {text:m.ed_izm,style:{alignment:'center'},...tStyle}, // Ед. изм.
+              {text:m.volume?m.volume:'',style:{alignment:'center'},...tStyle}, // Объем фактический
+              {text:m.price?m.price:0,style:{alignment:'right'},...tStyle}, // Стоимость за единицу
+              {text:this.lib.roundToX(m.cost?m.cost:0,2) ,style:{alignment:'right'},...tStyle}, // Итого, руб. 
+              {text:'',...tStyle}, // комментарий
+              {text:'',...tStyle}, // Дата Начало
+              {text:'',...tStyle} // Дата Завершение
+            ])
+          }
+        });
+      })
     });
     return actBody;
   }
@@ -320,13 +432,13 @@ class Act{
 // тест класса Act
 // **************************************************************************************************
 
-// async function testAtc(){
-//   const actId = 549;
-//   const act = new Act(actId);
-//   const resp = await act.print();
-//   console.log(resp)
-// }
+async function testAtc(){
+  const actId = 549;
+  const act = new Act(actId);
+  const resp = await act.print();
+  console.log(resp)
+}
 
-// testAtc()
+testAtc()
 
 export {Act};
