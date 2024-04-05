@@ -201,6 +201,11 @@ class Lib{
         return replacementString;
       
     }
+    /**
+     * Конвертирует дату в национальный формат
+     * @param {String} dateString строка с датой
+     * @returns String строка с датой в ru формате 
+     */
     convertToDate(dateString){
         if(dateString && !isNaN(Date.parse(dateString)))  
             return (new Date(dateString)).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit'})

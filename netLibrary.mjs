@@ -43,15 +43,6 @@ class Net{
     switchUseChache(newValue){
         this.options.useCache = !!newValue;
     }
-    // стоит ли делать init асинхронным, ведь тогда и конструктор будет асинхронным
-    // пусть при первом же выполнении getToken() значение токена сохраняется
-    // async init(apiName){
-    //     const token = await this.getToken();
-    //     if(!token) throw(new Error('Не удалось получить токен'))
-    //     this.setApiName(apiName);
-        
-    //     // если что-то пойдет не так при инициализации можно выкинуть исключение или вернуть сообщение
-    // }
     setApiName(apiName){
         if(this.options.validApiNames.some(vn=>vn==apiName)) this.apiName = apiName;
         else throw(new Error(`Недопустимое имя API. Доступные значения для apiName: ${this.options.validApiNames.join(', ')}`));
@@ -70,8 +61,6 @@ class Net{
         const formData = new URLSearchParams();
         formData.append('email', this.options.authentication.email);
         formData.append('password', this.options.authentication.password);
-        
-
 
         const options = {
             "method": "POST",
@@ -93,12 +82,10 @@ class Net{
             if(json.message){
                 throw(new Error(json.message))
             }
-            // по хорошему нужно еще проверить существование json.token !!!
             if(json.token) this.options.authentication.token = json.token;
             return json.token;
 
-        }catch(e){ // в случае ошибки return не нужен. если возникает ошибка промис запустит reject и передаст ошибку в него
-            // console.log('getToken: e = ', e)
+        }catch(e){ 
             throw(new Error('При получении токена возникла ошибка: '+ e.message));
         }
     }
@@ -120,8 +107,12 @@ class Net{
         }
         if(!this.apiName) throw(new Error('Не выбран API для выполнения запроса. this.apiName не установлен'))
 
-        // url и options сформированы, можно делать запрос
         try{
+            if(this.options.useCache){
+                const response = this.cache.getresponse(url);
+                if(response) console.log('getRout: cache hit. url=',url)
+                if(response) return response.text();
+            }
             const response = await fetch(url, options);
             const statusText = response.statusText;
             const status = response.status;
@@ -133,6 +124,7 @@ class Net{
 
                 throw(new Error(errMessage));
             }
+            this.cache.update({url:url,response:response})
             return await response.text()
 
         }catch(e){
@@ -141,9 +133,13 @@ class Net{
 
     }
     // --- Получение акта ---
+    /**
+     * В зависимости от this.apiName выбирает нужный метод получения акта
+     * если this.apiName невалидный - генерирует ошибку
+     * @param {Number} actId ID акта
+     * @returns {Act} объект с параметрами акта
+     */
     async getAct(actId){
-        // в зависимости от this.apiName выбирает нужный метод получения акта
-        // если this.apiName невалидный - генерирует ошибку
         if(this.apiName=='baseApi') return await this.getActFromBaseApi(actId);
         // if(this.apiName=='diadokApi') return await this.getActFromDiadokApi(actId);
         throw(new Error('Неизвестное имя API: ', this.apiName));
@@ -158,7 +154,6 @@ class Net{
     }
     // --- Получение калькуляции ---
     async getClc(clcId){
-        // в зависимости от this.apiName выбирает нужный метод получения акта
         if(this.apiName=='baseApi') return await this.getClcFromBaseApi(clcId);
         throw(new Error('Неизвестное имя API: ', this.apiName));
     }
@@ -168,7 +163,6 @@ class Net{
     }
     // --- Получение расчета ---
     async getEst(estId){
-        // в зависимости от this.apiName выбирает нужный метод получения акта
         if(this.apiName=='baseApi') return await this.getEstFromBaseApi(estId);
         throw(new Error('Неизвестное имя API: ', this.apiName));
     }
@@ -178,7 +172,6 @@ class Net{
     }
     // --- Получение наборов работ ---
     async getWst(wstId){
-        // в зависимости от this.apiName выбирает нужный метод получения акта
         if(this.apiName=='baseApi') {
             console.warn('Эта функция пока не реализована');
             return null;
@@ -187,7 +180,6 @@ class Net{
     }
     // --- Получение спецификации ---
     async getSpc(spcId){
-        // в зависимости от this.apiName выбирает нужный метод получения акта
         if(this.apiName=='baseApi') {
             console.warn('Эта функция пока не реализована');
             return null;
@@ -205,20 +197,20 @@ class Cache{
     }
     /**
      * Ищет запрос среди закешированных, если находит - обновляет, если нет, то добавляет
-     * @param{Object} req - url запроса и результат выполнения в виде {url:'', responce:Object}
+     * @param{Object} req - url запроса и результат выполнения в виде {url:'', response:Object}
      */
     update(req){
       const index = this.storage.findIndex(r=>r.url==req.url);
       if(index<0){
         this.storage.push(req)
-        return req.responce; 
+        return req.response; 
       }
-      this.storage[index].responce = req.responce;
-      return req.responce;
+      this.storage[index].response = req.response;
+      return req.response;
     }
-    getResponce(url){
+    getresponse(url){
       const req = this.storage.find(r=>r.url==url)
-      const res = req? req.responce: null;
+      const res = req? req.response: null;
       return res;
     }
   }
