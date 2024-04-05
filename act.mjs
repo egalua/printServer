@@ -431,15 +431,15 @@ class Act{
 // тест класса Act
 // **************************************************************************************************
 
-async function testAtc(){
-  const actId = 540;
-  const act = new Act(actId);
-  const resp = await act.print();
-  const resp2 = await act.print();
-  console.log(resp)
-  console.log(resp2)
-}
+// async function testAtc(){
+//   const actId = 540;
+//   const act = new Act(actId);
+//   const resp = await act.print();
+//   const resp2 = await act.print();
+//   console.log(resp)
+//   console.log(resp2)
+// }
 
-testAtc()
+// testAtc()
 
 export {Act};
