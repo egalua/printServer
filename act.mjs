@@ -130,7 +130,7 @@ class Act{
     const stream = fs.createReadStream(sourceFilename)
     const isPut= await client.putFileContents(remoteFilename, stream, { overwrite: true })
 
-    console.log('act print: isPut = ', isPut)
+    
     // Публикация файла (https://yandex.ru/dev/disk/doc/ru/reference/publish)
     const publicResponse = await client.customRequest(remoteFilename, {
       method: "PROPPATCH",
@@ -427,17 +427,19 @@ class Act{
 
 
 
-// // **************************************************************************************************
-// // тест класса Act
-// // **************************************************************************************************
+// **************************************************************************************************
+// тест класса Act
+// **************************************************************************************************
 
-// async function testAtc(){
-//   const actId = 549;
-//   const act = new Act(actId);
-//   const resp = await act.print();
-//   console.log(resp)
-// }
+async function testAtc(){
+  const actId = 540;
+  const act = new Act(actId);
+  const resp = await act.print();
+  const resp2 = await act.print();
+  console.log(resp)
+  console.log(resp2)
+}
 
-// testAtc()
+testAtc()
 
 export {Act};

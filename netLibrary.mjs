@@ -54,7 +54,11 @@ class Net{
      * @returns {Promise} промис с токеном
      */
     async getToken(){
-        if(this.options.authentication.token) this.options.authentication.token;
+        console.log('----- start get token -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
+        if(this.options.authentication.token) {
+            console.log('----- end get token -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
+            return this.options.authentication.token;
+        }
 
         const url = this.options.authentication.route;
 
@@ -83,6 +87,7 @@ class Net{
                 throw(new Error(json.message))
             }
             if(json.token) this.options.authentication.token = json.token;
+            console.log('----- end get token -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
             return json.token;
 
         }catch(e){ 
@@ -90,6 +95,7 @@ class Net{
         }
     }
     async getRoute(route, params){
+        console.log('----- start getRout -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
         let url = '';
         const options = {
             method: 'GET',
@@ -109,9 +115,13 @@ class Net{
 
         try{
             if(this.options.useCache){
-                const response = this.cache.getresponse(url);
-                if(response) console.log('getRout: cache hit. url=',url)
-                if(response) return response.text();
+                const res = this.cache.getresponse(url);
+                if(res){
+                    console.log('getRout: cache hit. url=',url)
+                    console.log('----- end getRout -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
+                    return await res;
+                }
+                
             }
             const response = await fetch(url, options);
             const statusText = response.statusText;
@@ -124,8 +134,10 @@ class Net{
 
                 throw(new Error(errMessage));
             }
-            this.cache.update({url:url,response:response})
-            return await response.text()
+            const jsonResponse = await response.text()
+            this.cache.update({url:url,response:jsonResponse})
+            console.log('----- end getRout -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
+            return jsonResponse;
 
         }catch(e){
             throw(new Error(e.message))
@@ -197,7 +209,7 @@ class Cache{
     }
     /**
      * Ищет запрос среди закешированных, если находит - обновляет, если нет, то добавляет
-     * @param{Object} req - url запроса и результат выполнения в виде {url:'', response:Object}
+     * @param{Object} req - url запроса и результат выполнения в виде {url:'', response:JSON}
      */
     update(req){
       const index = this.storage.findIndex(r=>r.url==req.url);
