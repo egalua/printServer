@@ -1,53 +1,34 @@
 import {Act} from './act.mjs';
-import http from 'http';
+import express from "express";
 import fs from "fs";
 
+const textConfig = fs.readFileSync('./config.json');
+const config = JSON.parse(textConfig)
+const port = config.port; 
+const host = config.host;
+const app = express();
 
-function onServer(){
-    const config = fs.readFileSync('./config.json');
-    const cfg = JSON.parse(config)
-    const host = cfg.host;
-    const port = cfg.port;
-    const requestListener = async (req, res)=>{
-        
-        const requestUrl = `http://${req.headers.host}${req.url}`
-        const url = new URL(requestUrl);
-        const actId = url.searchParams.get('act_id');
-        const actIdNum = parseInt(actId);
-        if(isNaN(actIdNum)){
-            const err = {error:'Указан не допустимый идентификатор акта'}
+app.route('/act').get(async (request, response)=>{
+    const actIdParam = request.query.act_id;
+    const actId = parseInt(actIdParam);
 
-            res.setHeader("Content-Type", "application/json");
-            res.write(JSON.stringify(err));
-            res.end();
-        } else {
-            let actUrlJSON = null;
-            try{
-                const act = new Act(actIdNum);
-                const actUrlResponse = await act.print();
-                // console.log('act = ',act)
-                // console.log('actUrlResponse = ',actUrlResponse);
-                actUrlJSON = JSON.stringify(actUrlResponse)    
-            }catch(e){
-                actUrlJSON = null;
-                res.setHeader("Content-Type", "application/json");
-                res.write(JSON.stringify({error:e.message}));
-                res.end();    
-            }
-            if(actUrlJSON!==null){
-                res.setHeader("Content-Type", "application/json");
-                res.write(actUrlJSON);
-                res.end();
-            }
-            
-        }
-        
+    if(isNaN(actId) || actId<=0){
+        response.json({error:"Указан недопустимый act_id"}).end()
+        return;
+    } 
+    
+    let actUrlResponse = null;
+    try{
+        const act = new Act(actId);
+        actUrlResponse = await act.print()
+        response.json(actUrlResponse)
+    }catch(e){
+        response.json({error: e.message})
     }
+    response.end();
 
-    const server = http.createServer(requestListener);
-    server.listen(port, host, ()=>{console.log(`Сервер запущен по адресу http://${host}:${port}`)});
-    
-    
-}
+})
 
-onServer();
+app.listen(port, host, ()=>{
+    console.log(`Server listens http://${host}:${port}`);
+})
