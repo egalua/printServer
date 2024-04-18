@@ -30,5 +30,5 @@ app.route('/act').get(async (request, response)=>{
 })
 
 app.listen(port, host, ()=>{
-    console.log(`Server listens http://${host}:${port}`);
+    console.log(`Print server listens http://${host}:${port}`);
 })
