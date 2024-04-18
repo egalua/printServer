@@ -135,7 +135,7 @@ class Net{
                 throw(new Error(errMessage));
             }
             const jsonResponse = await response.text()
-            this.cache.update({url:url,response:jsonResponse})
+            this.cache.update({url:url,response:jsonResponse,options:JSON.stringify(options)})
             console.log('----- end getRout -----',(new Date()).toLocaleString("ru-RU",{year:'numeric',month:"2-digit",day:'2-digit',hour:'numeric',minute:'numeric',second :'numeric',fractionalSecondDigits:3}))
             return jsonResponse;
 
@@ -209,10 +209,10 @@ class Cache{
     }
     /**
      * Ищет запрос среди закешированных, если находит - обновляет, если нет, то добавляет
-     * @param{Object} req - url запроса и результат выполнения в виде {url:'', response:JSON}
+     * @param{Object} req - url запроса и результат выполнения в виде {url:'', response:JSON, options:JSON}
      */
     update(req){
-      const index = this.storage.findIndex(r=>r.url==req.url);
+      const index = this.storage.findIndex(r=>r.url==req.url&&r.options==req.options);
       if(index<0){
         this.storage.push(req)
         return req.response; 
